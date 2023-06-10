@@ -4,7 +4,7 @@ Flask API Application
 
 from flask import Flask, jsonify, request
 from flasgger import Swagger, swag_from, LazyString, LazyJSONEncoder
-from db import create_connection, insert_dictionary_to_db, insert_result_to_db 
+from db import create_connection, insert_dictionary_to_db,insert_result_to_db ,show_cleansing_result 
 from Cleansing_function import text_cleansing
 
 # Prevent sorting keys in JSON response
@@ -64,6 +64,14 @@ def home ():
         "author":"Sony Dertha S."
     }
     return jsonify(welcome_msg)
+
+# Show Cleansing result
+@app.route('/show_cleansing_result', methods = ['GET'])
+@swag_from('docs/show_cleansing_result.yml')
+def show_cleansing_result_api():
+    db_connection = create_connection()
+    cleansing_result = show_cleansing_result(db_connection)
+    return jsonify(cleansing_result)
 
 # Cleansing text using form
 @app.route('/cleansing_form',methods = ['POST'])
