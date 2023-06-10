@@ -17,16 +17,14 @@ def insert_dictionary_to_db(conn):
     alay_csv_data = "csv_data/new_kamusalay.csv"
 
     # read csv file to dataframe
-    print ("read csv file to dataframe...")
+    print ("reading csv file to dataframe...")
     df_abusive = pd.read_csv(abusive_csv_data)
     df_alay = pd.read_csv(alay_csv_data)
-    print ("read csv file to dataframe success!!")
 
     # standardize column name
     print ("standardize column name...")
     df_abusive.columns = ['word']
     df_alay.columns = ['alay_word','formal_word']
-    print ("standardize column name success !!")
 
     # insert dataframe to database
     print ("insert dataframe to database...")
