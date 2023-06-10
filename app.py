@@ -4,12 +4,25 @@ Flask API Application
 
 from flask import Flask, jsonify, request
 from flasgger import Swagger, swag_from, LazyString, LazyJSONEncoder
-from db import create_connection,insert_dictionary_to_db
+from db import create_connection, insert_dictionary_to_db, insert_result_to_db 
 from Cleansing_function import text_cleansing
 
 # Prevent sorting keys in JSON response
 import flask
 flask.json.provider.DefaultJSONProvider.sort_keys = False
+
+
+# Function to initialize database
+# def initialize_database():
+# Create database connection
+db_connection = create_connection()
+# Insert dictionaries into the database
+insert_dictionary_to_db(db_connection)
+# Close the connection
+db_connection.close()
+
+# Run the database initialization function
+# initialize_database()
 
 #initialize flask aplication
 app = Flask(__name__) 
@@ -17,7 +30,6 @@ app = Flask(__name__)
 app.json_encoder = LazyJSONEncoder
 
 # create Swagger config & swagger template
-
 swagger_template = {
     "info":{ 
         "title" : LazyString(lambda: "Text Cleansing API"),
@@ -45,7 +57,6 @@ swagger = Swagger(app, template= swagger_template, config=swagger_config)
 # home page
 @app.route('/', methods = ['GET'])
 @swag_from ('docs/home.yml')
-
 def home ():
     welcome_msg = {
         "version":"1.0.0",
@@ -63,21 +74,11 @@ def cleansing_form():
     #Cleansing text
     clean_text = text_cleansing(raw_text)
     result_response = {"raw_text": raw_text, "clean_text": clean_text}
+    # Insert result to database
+    db_connection = create_connection()
+    insert_result_to_db(db_connection, raw_text, clean_text)
     return jsonify(result_response)
 
-# Function to initialize database
-def initialize_database():
-    # Create database connection
-    db_connection = create_connection()
-    # Insert dictionaries into the database
-    insert_dictionary_to_db(db_connection)
-    # Close the connection
-    db_connection.close()
-
-# Run the database initialization function
-initialize_database()
-
 if __name__ == '__main__':
-
     # Run the Flask application
     app.run()
