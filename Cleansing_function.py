@@ -22,7 +22,7 @@ def cleansing_files (file_upload):
     # Ambil kolom pertama saja
     df_upload = pd.DataFrame(df_upload.iloc[:,0])
     #rename kolom menjadi "raw_text"
-    df_upload.colums = ["raw_text"]
+    df_upload.columns = ["raw_text"]
     #bersihkan text menggunakan fungsi text_cleansing
     #simpan di kolom "clean_text"
     df_upload["clean_text"] = df_upload["raw_text"].apply(text_cleansing)
