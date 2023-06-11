@@ -4,8 +4,14 @@ Flask API Application
 
 from flask import Flask, jsonify, request
 from flasgger import Swagger, swag_from, LazyString, LazyJSONEncoder
-from db import create_connection, insert_dictionary_to_db,insert_result_to_db ,show_cleansing_result 
-from Cleansing_function import text_cleansing
+from db import (
+    create_connection, 
+    insert_dictionary_to_db,
+    insert_result_to_db,
+    show_cleansing_result,
+    insert_upload_result_to_db 
+)
+from Cleansing_function import text_cleansing, cleansing_files
 
 # Prevent sorting keys in JSON response
 import flask
@@ -67,7 +73,7 @@ def home ():
 
 # Show Cleansing result
 @app.route('/show_cleansing_result', methods = ['GET'])
-@swag_from('docs/show_cleansing_result.yml')
+@swag_from('docs/show_cleansing_result.yml', methods = ['GET'])
 def show_cleansing_result_api():
     db_connection = create_connection()
     cleansing_result = show_cleansing_result(db_connection)
@@ -75,7 +81,7 @@ def show_cleansing_result_api():
 
 # Cleansing text using form
 @app.route('/cleansing_form',methods = ['POST'])
-@swag_from ('docs/cleansing_form.yml')
+@swag_from ('docs/cleansing_form.yml',methods = ['POST'])
 def cleansing_form():
     #GET Text from input user
     raw_text = request.form["raw_text"]
@@ -86,6 +92,22 @@ def cleansing_form():
     db_connection = create_connection()
     insert_result_to_db(db_connection, raw_text, clean_text)
     return jsonify(result_response)
+
+# Cleansing text using csv upload
+@app.route('/cleansing_upload',methods = ['POST'])
+@swag_from ('docs/cleansing_upload.yml',methods = ['POST'])
+def cleansing_upload():
+    #GET Text from upload to database
+    upload_file = request.files['upload_file']
+    # Read csv file to dataframe then cleansing
+    df_cleansing = cleansing_files(upload_file) 
+    # upliad result to database
+    db_connection = create_connection()
+    insert_upload_result_to_db(db_connection, df_cleansing)
+    print("Upload result to database success!")
+    result_response = df_cleansing.T.to_dict()
+    return jsonify(result_response)
+
 
 if __name__ == '__main__':
     # Run the Flask application
