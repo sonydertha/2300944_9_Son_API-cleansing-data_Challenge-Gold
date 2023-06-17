@@ -3,7 +3,9 @@ Flask API Application
 """
 
 from flask import Flask, jsonify, request
+import pandas as pd
 from flasgger import Swagger, swag_from, LazyString, LazyJSONEncoder
+from Cleansing_function import text_cleansing, cleansing_files
 from db import (
     create_connection, 
     insert_dictionary_to_db,
@@ -11,12 +13,11 @@ from db import (
     show_cleansing_result,
     insert_upload_result_to_db 
 )
-from Cleansing_function import text_cleansing, cleansing_files
+from time import perf_counter
 
 # Prevent sorting keys in JSON response
 import flask
 flask.json.provider.DefaultJSONProvider.sort_keys = False
-
 
 # Function to initialize database
 # def initialize_database():
@@ -34,33 +35,31 @@ db_connection.close()
 app = Flask(__name__) 
 # assign LaziJSONEncoder to app.json_encoder for swagger UI
 app.json_encoder = LazyJSONEncoder
-
-# create Swagger config & swagger template
+# create swagger config & swagger template
 swagger_template = {
-    "info":{ 
-        "title" : LazyString(lambda: "Text Cleansing API"),
-        "version" : LazyString(lambda: "1.0.0"),
-        "description" : LazyString(lambda: "Dokumentasi API untuk membersihkan text")
+    "info":{
+        "title": LazyString(lambda: "Text Cleansing API"),
+        "version": LazyString(lambda: "1.0.0"),
+        "description": LazyString(lambda: "Dokumentasi API untuk membersihkan text")
     },
-    "host": LazyString (lambda: request.host)
+    "host": LazyString(lambda: request.host)
 }
 swagger_config = {
-    "headers" : [],
+    "headers": [],
     "specs": [
         {
             "endpoint": 'docs',
             "route": '/docs.json',
         }
     ],
-    "static_url_path" : "/flasgger_static",
+    "static_url_path": "/flasgger_static",
     "swagger_ui": True,
     "specs_route": "/docs/"
 }
-
-# initialize swatter from swagger template & config
+# initialize swagger from swagger template & config
 swagger = Swagger(app, template= swagger_template, config=swagger_config)
 
-# home page
+# homepage
 @app.route('/', methods = ['GET'])
 @swag_from ('docs/home.yml')
 def home ():
@@ -86,8 +85,12 @@ def cleansing_form():
     #GET Text from input user
     raw_text = request.form["raw_text"]
     #Cleansing text
+    start = perf_counter()
     clean_text = text_cleansing(raw_text)
-    result_response = {"raw_text": raw_text, "clean_text": clean_text}
+    end = perf_counter()
+    time_elapse = end-start
+    print (f'processing time : {time_elapse}')
+    result_response = {"raw_text": raw_text, "clean_text": clean_text, "processing time": time_elapse}
     # Insert result to database
     db_connection = create_connection()
     insert_result_to_db(db_connection, raw_text, clean_text)
@@ -99,16 +102,19 @@ def cleansing_form():
 def cleansing_upload():
     #GET Text from upload to database
     upload_file = request.files['upload_file']
-    # Read csv file to dataframe then cleansing
-    df_cleansing = cleansing_files(upload_file) 
-    # upliad result to database
+    # Read csv file to dataframe
+    df_upload = pd.read_csv(upload_file,encoding ='latin-1')
+    print('Read dataframe Upload success!')
+    df_cleansing = cleansing_files(upload_file)
+    # Upload result to database
     db_connection = create_connection()
     insert_upload_result_to_db(db_connection, df_cleansing)
     print("Upload result to database success!")
-    result_response = df_cleansing.T.to_dict()
+    # Convert dataframe to list of dictionaries
+    result_response = df_cleansing.to_dict(orient='records')
     return jsonify(result_response)
 
 
 if __name__ == '__main__':
     # Run the Flask application
-    app.run()
+    app.run(port = 80)
