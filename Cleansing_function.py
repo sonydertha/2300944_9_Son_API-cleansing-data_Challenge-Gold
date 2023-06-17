@@ -16,7 +16,8 @@ def text_cleansing(text):
     df_abusive = get_abusive_data (conn)
     abusive_words = df_abusive ['word'].tolist()
     for word in abusive_words:
-        clean_text = clean_text.replace(word, '*****')
+        asterisks = '*' * len(word)
+        clean_text = clean_text.replace(word, asterisks)
 
     # Clean alay words
     replacement_words = pd.read_sql('SELECT * FROM alay',conn)
